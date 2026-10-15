@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Memory della Fattoria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky:#BFE6F7; --grass:#7BC96F; --grass-dark:#4E9F45; --sun:#FFC93C;
+  --barn:#D9483B; --barn-dark:#A8322A; --paper:#FFFDF6; --ink:#263238;
+  --card-shadow:#3A5A40; --muted:#55707A;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --sky:#1C2D4A; --grass:#2F5F3A; --grass-dark:#22472B; --sun:#F2C14E;
+    --barn:#C94A3E; --barn-dark:#8E2F27; --paper:#FFF8E7; --ink:#F4F1E8;
+    --card-shadow:#0E1A12; --muted:#B7C6D6;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --sky:#1C2D4A; --grass:#2F5F3A; --grass-dark:#22472B; --sun:#F2C14E;
+  --barn:#C94A3E; --barn-dark:#8E2F27; --paper:#FFF8E7; --ink:#F4F1E8;
+  --card-shadow:#0E1A12; --muted:#B7C6D6;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:"Baloo 2","Comic Sans MS","Trebuchet MS",system-ui,sans-serif;
+  color:var(--ink);
+  background:linear-gradient(var(--sky) 0 62%, var(--grass) 62% 100%);
+  background-attachment:fixed;
+  display:flex;flex-direction:column;align-items:center;
+  padding:16px 12px 32px;
+}
+h1{
+  font-size:clamp(2rem,6vw,3.2rem);font-weight:800;line-height:1;
+  margin:8px 0 4px;text-align:center;letter-spacing:.01em;
+  color:var(--barn);
+  text-shadow:3px 3px 0 var(--paper);
+}
+.sub{margin:0 0 14px;font-size:1.15rem;color:var(--muted);text-align:center}
+.levels{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+button{font:inherit;cursor:pointer}
+.lvl{
+  border:3px solid var(--ink);background:var(--paper);color:#263238;
+  font-size:1.15rem;font-weight:700;padding:6px 18px;border-radius:999px;
+  box-shadow:0 4px 0 var(--ink);transition:transform .1s;
+}
+.lvl:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.lvl[aria-pressed="true"]{background:var(--sun)}
+.lvl:focus-visible,.card:focus-visible,.again:focus-visible{outline:4px solid var(--barn);outline-offset:3px}
+.stats{display:flex;gap:18px;font-size:1.2rem;font-weight:700;margin-bottom:14px;color:var(--ink)}
+.stats span b{font-size:1.4rem}
+.board{
+  display:grid;gap:clamp(8px,2vw,14px);
+  width:min(100%,640px);
+  grid-template-columns:repeat(var(--cols,4),1fr);
+}
+.card{
+  aspect-ratio:3/4;border:none;padding:0;background:none;
+  perspective:700px;
+}
+.inner{
+  position:relative;width:100%;height:100%;
+  transition:transform .45s cubic-bezier(.3,1.4,.5,1);
+  transform-style:preserve-3d;
+}
+.card.flip .inner,.card.done .inner{transform:rotateY(180deg)}
+.face{
+  position:absolute;inset:0;border-radius:14px;backface-visibility:hidden;
+  display:flex;align-items:center;justify-content:center;
+  border:3px solid var(--ink);box-shadow:0 5px 0 var(--card-shadow);
+}
+/* barn door back */
+.back{
+  background:
+    linear-gradient(to top right, transparent calc(50% - 3px), var(--paper) calc(50% - 3px) calc(50% + 3px), transparent calc(50% + 3px)),
+    linear-gradient(to top left, transparent calc(50% - 3px), var(--paper) calc(50% - 3px) calc(50% + 3px), transparent calc(50% + 3px)),
+    var(--barn);
+  outline:6px solid var(--paper);outline-offset:-12px;
+}
+.front{
+  background:var(--paper);transform:rotateY(180deg);
+  font-size:clamp(2.2rem,9vw,3.8rem);
+}
+.card.done .front{background:#E8F7D4;animation:hop .5s ease}
+@keyframes hop{40%{transform:rotateY(180deg) scale(1.12)}}
+.card.nope .inner{animation:shake .4s}
+@keyframes shake{25%{translate:-5px}75%{translate:5px}}
+.win{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.35);padding:20px;z-index:20;
+}
+.win.show{display:flex}
+.panel{
+  background:var(--paper);color:#263238;border:4px solid #263238;border-radius:24px;
+  padding:24px 28px;text-align:center;max-width:340px;box-shadow:0 8px 0 #263238;
+  animation:pop .5s cubic-bezier(.3,1.6,.5,1);
+}
+@keyframes pop{from{transform:scale(.5);opacity:0}}
+.panel h2{margin:0;font-size:2.2rem;color:var(--barn-dark)}
+.panel .stars{font-size:2.8rem;margin:6px 0}
+.panel p{margin:4px 0 16px;font-size:1.2rem}
+.again{
+  background:var(--sun);border:3px solid #263238;border-radius:999px;color:#263238;
+  font-size:1.3rem;font-weight:800;padding:8px 26px;box-shadow:0 4px 0 #263238;
+}
+.sound{
+  position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:12px;
+  background:var(--paper);border:3px solid var(--ink);border-radius:50%;
+  width:46px;height:46px;font-size:1.3rem;box-shadow:0 3px 0 var(--ink);
+}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:30}
+@media (prefers-reduced-motion: reduce){
+  .inner{transition:none}.card.done .front,.card.nope .inner,.panel{animation:none}
+}
+</style>
+</head>
+<body>
+<button class="sound" id="sound" aria-label="Audio acceso">🔊</button>
+<h1>Memory della Fattoria</h1>
+<p class="sub">Gira due carte e trova gli animali uguali!</p>
+<div class="levels" role="group" aria-label="Scegli il livello">
+  <button class="lvl" data-pairs="3" aria-pressed="false">🐣 Piccoli</button>
+  <button class="lvl" data-pairs="6" aria-pressed="true">🐥 Medi</button>
+  <button class="lvl" data-pairs="8" aria-pressed="false">🐓 Grandi</button>
+</div>
+<div class="stats"><span>Mosse: <b id="moves">0</b></span><span>Coppie: <b id="found">0</b>/<b id="total">0</b></span></div>
+<div class="board" id="board"></div>
+
+<div class="win" id="win" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+  <div class="panel">
+    <h2 id="winTitle">Bravissimo!</h2>
+    <div class="stars" id="stars">⭐⭐⭐</div>
+    <p id="winText"></p>
+    <button class="again" id="again">Gioca ancora</button>
+  </div>
+</div>
+<canvas id="confetti"></canvas>
+
+<script>
+const ANIMALS=[
+ ["🐮","la mucca"],["🐷","il maiale"],["🐔","la gallina"],["🐑","la pecora"],
+ ["🐴","il cavallo"],["🐶","il cane"],["🐱","il gatto"],["🦆","l'anatra"],
+ ["🐰","il coniglio"],["🐐","la capra"]
+];
+const board=document.getElementById('board');
+const movesEl=document.getElementById('moves'),foundEl=document.getElementById('found'),totalEl=document.getElementById('total');
+let pairs=6,first=null,lock=false,moves=0,found=0,soundOn=true,actx=null;
+
+function tone(freqs,dur=.12,type='triangle'){
+  if(!soundOn)return;
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    freqs.forEach((f,i)=>{
+      const o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime+i*dur;
+      o.type=type;o.frequency.value=f;
+      g.gain.setValueAtTime(.18,t);g.gain.exponentialRampToValueAtTime(.001,t+dur*1.6);
+      o.connect(g).connect(actx.destination);o.start(t);o.stop(t+dur*1.7);
+    });
+  }catch(e){}
+}
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function start(){
+  first=null;lock=false;moves=0;found=0;
+  movesEl.textContent=0;foundEl.textContent=0;totalEl.textContent=pairs;
+  const pick=shuffle([...ANIMALS]).slice(0,pairs);
+  const deck=shuffle([...pick,...pick]);
+  const cols=pairs===3?3:4;
+  board.style.setProperty('--cols',cols);
+  board.style.maxWidth=pairs===3?'420px':'';
+  board.innerHTML='';
+  deck.forEach(([emoji,name],i)=>{
+    const b=document.createElement('button');
+    b.className='card';b.dataset.emoji=emoji;b.dataset.name=name;
+    b.setAttribute('aria-label','Carta coperta');
+    b.innerHTML=`<div class="inner"><div class="face back"></div><div class="face front">${emoji}</div></div>`;
+    b.addEventListener('click',()=>flip(b));
+    board.appendChild(b);
+  });
+}
+
+function flip(c){
+  if(lock||c===first||c.classList.contains('done'))return;
+  c.classList.add('flip');c.setAttribute('aria-label',c.dataset.name);
+  tone([520],.08);
+  if(!first){first=c;return}
+  moves++;movesEl.textContent=moves;
+  const a=first,b=c;first=null;
+  if(a.dataset.emoji===b.dataset.emoji){
+    setTimeout(()=>{
+      a.classList.add('done');b.classList.add('done');
+      tone([660,880,1100],.1);
+      found++;foundEl.textContent=found;
+      if(found===pairs)setTimeout(win,600);
+    },350);
+  }else{
+    lock=true;
+    setTimeout(()=>{
+      a.classList.add('nope');b.classList.add('nope');tone([300,240],.1,'sine');
+    },600);
+    setTimeout(()=>{
+      [a,b].forEach(x=>{x.classList.remove('flip','nope');x.setAttribute('aria-label','Carta coperta')});
+      lock=false;
+    },1100);
+  }
+}
+
+function win(){
+  const extra=moves-pairs;
+  const n=extra<=pairs*.5?3:extra<=pairs*1.2?2:1;
+  document.getElementById('stars').textContent='⭐'.repeat(n);
+  document.getElementById('winText').textContent=`Hai trovato tutti gli animali in ${moves} mosse!`;
+  document.getElementById('win').classList.add('show');
+  document.getElementById('again').focus();
+  tone([523,659,784,1047],.15,'square');
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)confetti();
+}
+
+document.getElementById('again').onclick=()=>{document.getElementById('win').classList.remove('show');start()};
+document.querySelectorAll('.lvl').forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll('.lvl').forEach(x=>x.setAttribute('aria-pressed','false'));
+  btn.setAttribute('aria-pressed','true');pairs=+btn.dataset.pairs;start();
+});
+const sBtn=document.getElementById('sound');
+sBtn.onclick=()=>{soundOn=!soundOn;sBtn.textContent=soundOn?'🔊':'🔇';sBtn.setAttribute('aria-label',soundOn?'Audio acceso':'Audio spento')};
+
+function confetti(){
+  const cv=document.getElementById('confetti'),ctx=cv.getContext('2d');
+  cv.width=innerWidth;cv.height=innerHeight;
+  const cols=['#FFC93C','#D9483B','#7BC96F','#5BB4E5','#F78FB3'];
+  const ps=Array.from({length:140},()=>({x:Math.random()*cv.width,y:-20-Math.random()*cv.height*.5,
+    vx:(Math.random()-.5)*3,vy:2+Math.random()*3,r:Math.random()*6.28,s:6+Math.random()*6,c:cols[Math.floor(Math.random()*5)]}));
+  let f=0;
+  (function loop(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=.1;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);
+      ctx.fillStyle=p.c;ctx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);ctx.restore()});
+    if(++f<240)requestAnimationFrame(loop);else ctx.clearRect(0,0,cv.width,cv.height);
+  })();
+}
+start();
+</script>
+</body>
+</html>
